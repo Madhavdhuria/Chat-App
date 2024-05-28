@@ -7,6 +7,8 @@ import Signup from "./components/Signup";
 import App from "./App";
 import RouteGuard from "./components/RouteGuard";
 import { Outlet } from "react-router-dom";
+import Signin from "./components/Signin";
+import Home from "./components/Home";
 const ProtectedRoute = () => (
   <RouteGuard>
     <Outlet />
@@ -15,17 +17,25 @@ const ProtectedRoute = () => (
 const router = createBrowserRouter([
   {
     path: "/",
-    element: <ProtectedRoute />, // Apply RouteGuard to this route
+    element: <ProtectedRoute />,
     children: [
       {
         path: "/",
         element: <App />,
       },
-      {
-        path: "/signup",
-        element: <Signup />,
-      },
     ],
+  },
+  {
+    path: "/signup",
+    element: <Signup />,
+  },
+  {
+    path: "/signin",
+    element: <Signin />,
+  },
+  {
+    path: "/home",
+    element: <Home />,
   },
 ]);
 

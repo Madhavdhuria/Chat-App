@@ -4,21 +4,21 @@ import { useNavigate } from "react-router-dom";
 import { User } from "../Recoil";
 import { useRecoilValue, useSetRecoilState } from "recoil";
 
-const Signup = () => {
-const   userIdCookie=useRecoilValue(User)
-  useEffect(() => {
-    if (userIdCookie) {
-      navigate("/");
-    }
-  }, []);
+const Signin = () => {
+  const userIdCookie = useRecoilValue(User);
   const setUsername = useSetRecoilState(User);
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     email: "",
-    name: "",
     password: "",
   });
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (userIdCookie) {
+      navigate("/");
+    }
+  }, [userIdCookie, navigate]);
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -34,17 +34,17 @@ const   userIdCookie=useRecoilValue(User)
 
     try {
       const { data } = await axios.post(
-        "http://localhost:3000/signup",
+        "http://localhost:3000/signin",
         formData,
         {
           withCredentials: true,
         }
       );
-      if (data.id) {
+      if (data.success) {
         setUsername(data.name);
         navigate("/");
-      } else if (data.message) {
-        setError(data.message);
+      } else if (data.error) {
+        setError(data.error);
       }
     } catch (error: any) {
       setError(error.response?.data?.message || "Something went wrong");
@@ -54,7 +54,7 @@ const   userIdCookie=useRecoilValue(User)
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100">
       <div className="w-full max-w-md p-8 space-y-6 bg-white rounded shadow-md">
-        <h2 className="text-2xl font-bold text-center">Sign Up</h2>
+        <h2 className="text-2xl font-bold text-center">Sign In</h2>
         {error && <p className="text-red-500">{error}</p>}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -65,19 +65,6 @@ const   userIdCookie=useRecoilValue(User)
               type="email"
               name="email"
               value={formData.email}
-              onChange={handleChange}
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring focus:border-blue-300"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Name
-            </label>
-            <input
-              type="text"
-              name="name"
-              value={formData.name}
               onChange={handleChange}
               required
               className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring focus:border-blue-300"
@@ -100,7 +87,7 @@ const   userIdCookie=useRecoilValue(User)
             type="submit"
             className="w-full py-2 text-white bg-blue-500 rounded hover:bg-blue-600 focus:outline-none focus:ring focus:border-blue-300"
           >
-            Sign Up
+            Sign In
           </button>
         </form>
       </div>
@@ -108,4 +95,4 @@ const   userIdCookie=useRecoilValue(User)
   );
 };
 
-export default Signup;
+export default Signin;
