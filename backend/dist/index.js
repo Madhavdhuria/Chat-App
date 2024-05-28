@@ -84,13 +84,15 @@ app.post("/signin", (req, res) => __awaiter(void 0, void 0, void 0, function* ()
                 });
             }
             else {
-                return res.status(401).json({
+                return res.json({
+                    success: false,
                     error: "Invalid credentials!",
                 });
             }
         }
         else {
-            return res.status(401).json({
+            return res.json({
+                success: false,
                 error: "Invalid credentials!",
             });
         }

@@ -1,17 +1,10 @@
-import { useState, ChangeEvent, FormEvent, useEffect } from "react";
 import axios from "axios";
+import { useState, ChangeEvent, FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { User } from "../Recoil";
-import { useRecoilValue, useSetRecoilState } from "recoil";
-
+import { useSetRecoilState } from "recoil";
 const Signup = () => {
-const   userIdCookie=useRecoilValue(User)
-  useEffect(() => {
-    if (userIdCookie) {
-      navigate("/");
-    }
-  }, []);
-  const setUsername = useSetRecoilState(User);
+  const setUserCookie = useSetRecoilState(User);
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     email: "",
@@ -41,7 +34,13 @@ const   userIdCookie=useRecoilValue(User)
         }
       );
       if (data.id) {
-        setUsername(data.name);
+        const cookies = document.cookie
+          .split(";")
+          .map((cookie) => cookie.trim());
+        const userIdCookie = cookies.find((cookie) =>
+          cookie.startsWith("userId=")
+        );
+        setUserCookie(userIdCookie);
         navigate("/");
       } else if (data.message) {
         setError(data.message);

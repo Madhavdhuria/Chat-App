@@ -1,9 +1,11 @@
 import axios from "axios";
 import { useEffect, useState } from "react";
+import Appbar from "./components/Appbar";
 
 function App() {
-  const [userInfo, setUserInfo]: any = useState(null);
-  const [error, setError]: any = useState(null);
+  const [userInfo, setUserInfo]:any|string = useState(null);
+  const [error, setError] = useState(null);
+
 
   useEffect(() => {
     const getInfo = async () => {
@@ -12,7 +14,7 @@ function App() {
           withCredentials: true,
         });
         setUserInfo(response.data.userInfo);
-      } catch (err) {
+      } catch (err:any) {
         setError(err);
       }
     };
@@ -26,6 +28,7 @@ function App() {
   if (userInfo) {
     return (
       <div>
+        <Appbar name={userInfo.name}/>
         <h1 className="text-4xl">{`Welcome ${userInfo.name}`}</h1>
       </div>
     );

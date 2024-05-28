@@ -4,16 +4,14 @@ import "./index.css";
 import { RecoilRoot } from "recoil";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import Signup from "./components/Signup";
+import Signin from "./components/Signin";
 import App from "./App";
 import RouteGuard from "./components/RouteGuard";
-import { Outlet } from "react-router-dom";
-import Signin from "./components/Signin";
 import Home from "./components/Home";
-const ProtectedRoute = () => (
-  <RouteGuard>
-    <Outlet />
-  </RouteGuard>
-);
+import { Outlet } from "react-router-dom";
+// This component protects routes that require authentication
+const ProtectedRoute = () => <RouteGuard>{<Outlet />}</RouteGuard>;
+
 const router = createBrowserRouter([
   {
     path: "/",
@@ -23,19 +21,19 @@ const router = createBrowserRouter([
         path: "/",
         element: <App />,
       },
+      {
+        path: "/signup",
+        element: <Signup />,
+      },
+      {
+        path: "/signin",
+        element: <Signin />,
+      },
+      {
+        path: "/home",
+        element: <Home />,
+      },
     ],
-  },
-  {
-    path: "/signup",
-    element: <Signup />,
-  },
-  {
-    path: "/signin",
-    element: <Signin />,
-  },
-  {
-    path: "/home",
-    element: <Home />,
   },
 ]);
 

@@ -1,16 +1,8 @@
-import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import {User} from "../Recoil";
-import { useRecoilValue } from "recoil";
+
 
 const Home = () => {
   const navigate = useNavigate();
-  const userIdCookie = useRecoilValue(User);
-  useEffect(() => {
-    if (userIdCookie) {
-      navigate("/");
-    }
-  }, [userIdCookie, navigate]);
   const goToSignup = () => {
     navigate("/signup");
   };

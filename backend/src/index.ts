@@ -84,12 +84,14 @@ app.post("/signin", async (req, res) => {
           success: true,
         });
       } else {
-        return res.status(401).json({
+        return res.json({
+          success: false,
           error: "Invalid credentials!",
         });
       }
     } else {
-      return res.status(401).json({
+      return res.json({
+        success: false,
         error: "Invalid credentials!",
       });
     }

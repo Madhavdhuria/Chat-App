@@ -1,12 +1,12 @@
-import { useState, ChangeEvent, FormEvent, useEffect } from "react";
+import { useState, ChangeEvent, FormEvent } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { User } from "../Recoil";
-import { useRecoilValue, useSetRecoilState } from "recoil";
+import {  useSetRecoilState } from "recoil";
 
 const Signin = () => {
-  const userIdCookie = useRecoilValue(User);
-  const setUsername = useSetRecoilState(User);
+  // const userIdCookie = useRecoilValue(User);
+  const setUserCookie = useSetRecoilState(User);
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     email: "",
@@ -14,11 +14,11 @@ const Signin = () => {
   });
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    if (userIdCookie) {
-      navigate("/");
-    }
-  }, [userIdCookie, navigate]);
+  // useEffect(() => {
+  //   if (userIdCookie) {
+  //     navigate("/");
+  //   }
+  // }, [userIdCookie, navigate]);
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -41,9 +41,15 @@ const Signin = () => {
         }
       );
       if (data.success) {
-        setUsername(data.name);
+        const cookies = document.cookie
+        .split(";")
+        .map((cookie) => cookie.trim());
+      const userIdCookie = cookies.find((cookie) =>
+        cookie.startsWith("userId=")
+      );
+      setUserCookie(userIdCookie);
         navigate("/");
-      } else if (data.error) {
+      } else if (!data.su) {
         setError(data.error);
       }
     } catch (error: any) {
