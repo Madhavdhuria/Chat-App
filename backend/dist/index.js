@@ -45,7 +45,6 @@ app.get("/", authenticateToken, (req, res) => __awaiter(void 0, void 0, void 0, 
     if (!req.user) {
         return res.status(401).json({ message: "Unauthorized" });
     }
-    // console.log(req.user);
     const { userId } = req.user;
     const userInfo = yield prisma.user.findUnique({
         where: {
@@ -71,9 +70,7 @@ app.post("/signup", (req, res) => __awaiter(void 0, void 0, void 0, function* ()
     const { id } = newUser;
     const username = newUser.name;
     if (newUser) {
-        const token = jsonwebtoken_1.default.sign({ userId: id, name: username }, JWT_SECRET, {
-            expiresIn: "1h",
-        });
+        const token = jsonwebtoken_1.default.sign({ userId: id, name: username }, JWT_SECRET);
         res.cookie("token", token, {
             // httpOnly: true,
             secure: false,
@@ -90,9 +87,7 @@ app.post("/signin", (req, res) => __awaiter(void 0, void 0, void 0, function* ()
         if (existingUser) {
             const matched = yield bcrypt_1.default.compare(password, existingUser.password);
             if (matched) {
-                const token = jsonwebtoken_1.default.sign({ userId: existingUser.id, name: existingUser.name }, JWT_SECRET, {
-                    expiresIn: "1h",
-                });
+                const token = jsonwebtoken_1.default.sign({ userId: existingUser.id, name: existingUser.name }, JWT_SECRET);
                 res.cookie("token", token, {
                     // httpOnly: true,
                     secure: false,
@@ -154,6 +149,32 @@ wss.on("connection", (connection, req) => {
                     }));
                 });
             };
+            connection.on("message", (message) => __awaiter(void 0, void 0, void 0, function* () {
+                const { messagedata } = JSON.parse(message.toString());
+                const { recipient, text, senderName, senderId } = messagedata;
+                if (recipient && text) {
+                    const res = yield prisma.p2p_Message.create({
+                        data: {
+                            recipientId: Number(recipient),
+                            senderId,
+                            message: text,
+                        },
+                    });
+                    console.log(res);
+                    const RecipientFound = [...wss.clients].filter((client) => {
+                        const customClient = client;
+                        return String(customClient.userId) === String(recipient);
+                    });
+                    RecipientFound.forEach((c) => {
+                        const customClient = c;
+                        customClient.send(JSON.stringify({
+                            senderName: senderName,
+                            senderId: senderId,
+                            data: text,
+                        }));
+                    });
+                }
+            }));
             broadcastClientInfo();
             connection.on("close", () => {
                 broadcastClientInfo();

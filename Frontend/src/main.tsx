@@ -10,7 +10,6 @@ import RouteGuard from "./components/RouteGuard";
 import { Outlet } from "react-router-dom";
 import { Navigate } from "react-router-dom";
 import { User } from "./Recoil";
-
 const ProtectedRoute = () => <RouteGuard>{<Outlet />}</RouteGuard>;
 
 const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -25,7 +24,7 @@ const router = createBrowserRouter([
     children: [
       {
         path: "/",
-        element: <App />,
+        element: <App/>
       },
     ],
   },

@@ -48,7 +48,6 @@ app.get("/", authenticateToken, async (req: Request, res: Response) => {
   if (!req.user) {
     return res.status(401).json({ message: "Unauthorized" });
   }
-  // console.log(req.user);
 
   const { userId } = req.user;
   const userInfo = await prisma.user.findUnique({
@@ -82,9 +81,7 @@ app.post("/signup", async (req: Request, res: Response) => {
   const username = newUser.name;
 
   if (newUser) {
-    const token = jwt.sign({ userId: id, name: username }, JWT_SECRET, {
-      expiresIn: "1h",
-    });
+    const token = jwt.sign({ userId: id, name: username }, JWT_SECRET);
 
     res.cookie("token", token, {
       // httpOnly: true,
@@ -106,10 +103,7 @@ app.post("/signin", async (req: Request, res: Response) => {
       if (matched) {
         const token = jwt.sign(
           { userId: existingUser.id, name: existingUser.name },
-          JWT_SECRET,
-          {
-            expiresIn: "1h",
-          }
+          JWT_SECRET
         );
         res.cookie("token", token, {
           // httpOnly: true,
@@ -180,6 +174,37 @@ wss.on("connection", (connection: CustomWebSocket, req) => {
           );
         });
       };
+      connection.on("message", async (message) => {
+        const { messagedata } = JSON.parse(message.toString());
+        const { recipient, text, senderName, senderId } = messagedata;
+
+        if (recipient && text) {
+          const res = await prisma.p2p_Message.create({
+            data: {
+              recipientId: Number(recipient),
+              senderId,
+              message: text,
+            },
+          });
+          console.log(res);
+          const RecipientFound = [...wss.clients].filter((client) => {
+            const customClient = client as CustomWebSocket;
+            return String(customClient.userId) === String(recipient);
+          });
+
+          RecipientFound.forEach((c) => {
+            const customClient = c as CustomWebSocket;
+            customClient.send(
+              JSON.stringify({
+                senderName: senderName,
+                senderId: senderId,
+                data: text,
+              })
+            );
+          });
+        }
+      });
+
       broadcastClientInfo();
       connection.on("close", () => {
         broadcastClientInfo();

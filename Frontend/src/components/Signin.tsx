@@ -96,6 +96,13 @@ const Signin = () => {
             Sign In
           </button>
         </form>
+        <div className="flex justify-center items-center">
+          <p>
+            Don't have an account? <span className="underline text-blue-500  cursor-pointer" onClick={()=>{
+              navigate("/signup")
+            }}>Signup</span>
+          </p>
+        </div>
       </div>
     </div>
   );
