@@ -2,6 +2,8 @@ import { useNavigate } from "react-router-dom";
 
 
 const Home = () => {
+  console.log("home");
+  
   const navigate = useNavigate();
   const goToSignup = () => {
     navigate("/signup");

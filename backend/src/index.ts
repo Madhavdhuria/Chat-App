@@ -1,14 +1,17 @@
 import { PrismaClient } from "@prisma/client";
 import cors from "cors";
-import express from "express";
+import express, { NextFunction, Request, Response } from "express";
 import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
 import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
+import ws from "ws";
 
 dotenv.config();
 
 const app = express();
 const prisma = new PrismaClient();
+const JWT_SECRET = process.env.JWT_SECRET || "default_secret";
 
 app.use(express.json());
 app.use(
@@ -19,23 +22,44 @@ app.use(
 );
 app.use(cookieParser());
 
-app.get("/", async (req, res) => {
-  const { userId } = req.cookies;
-  if (userId) {
-    const userInfo = await prisma.user.findUnique({
-      where: {
-        id: parseInt(userId),
-      },
-    });
-    return res.json({ userInfo });
-  } else {
-    return res.json({
-      message: "failed to get info",
-    });
+interface UserPayload {
+  userId: number;
+  name: string;
+}
+
+declare module "express-serve-static-core" {
+  interface Request {
+    user?: UserPayload;
   }
+}
+
+const authenticateToken = (req: Request, res: Response, next: NextFunction) => {
+  const token = req.cookies.token;
+
+  if (!token) return res.sendStatus(401);
+  jwt.verify(token, JWT_SECRET, (err: any, user: any) => {
+    if (err) return res.sendStatus(403);
+    req.user = user as UserPayload;
+    next();
+  });
+};
+
+app.get("/", authenticateToken, async (req: Request, res: Response) => {
+  if (!req.user) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+  // console.log(req.user);
+
+  const { userId } = req.user;
+  const userInfo = await prisma.user.findUnique({
+    where: {
+      id: userId,
+    },
+  });
+  return res.json({ userInfo });
 });
 
-app.post("/signup", async (req, res) => {
+app.post("/signup", async (req: Request, res: Response) => {
   const { name, email, password } = req.body;
 
   let existingUser = await prisma.user.findFirst({ where: { name } });
@@ -58,25 +82,37 @@ app.post("/signup", async (req, res) => {
   const username = newUser.name;
 
   if (newUser) {
-    res.cookie("userId", id, {
+    const token = jwt.sign({ userId: id, name: username }, JWT_SECRET, {
+      expiresIn: "1h",
+    });
+
+    res.cookie("token", token, {
+      // httpOnly: true,
       secure: false,
       sameSite: "strict",
     });
-
     return res.json({ id, name: username });
   }
 
   return res.status(500).json({ message: "Error while adding" });
 });
 
-app.post("/signin", async (req, res) => {
+app.post("/signin", async (req: Request, res: Response) => {
   const { email, password } = req.body;
   try {
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
       const matched = await bcrypt.compare(password, existingUser.password);
       if (matched) {
-        res.cookie("userId", existingUser.id, {
+        const token = jwt.sign(
+          { userId: existingUser.id, name: existingUser.name },
+          JWT_SECRET,
+          {
+            expiresIn: "1h",
+          }
+        );
+        res.cookie("token", token, {
+          // httpOnly: true,
           secure: false,
           sameSite: "strict",
         });
@@ -102,8 +138,52 @@ app.post("/signin", async (req, res) => {
     });
   }
 });
+interface CustomWebSocket extends ws.WebSocket {
+  userId?: string;
+  name?: string;
+}
 
-
-app.listen(3000, () => {
+const server = app.listen(3000, () => {
   console.log("App is listening at port 3000");
+});
+
+const wss = new ws.WebSocketServer({ server });
+
+wss.on("connection", (connection: CustomWebSocket, req) => {
+  const allcookies = req?.headers?.cookie;
+  const tokencookie = allcookies
+    ?.split(";")
+    .find((cookie) => cookie.trim().startsWith("token="));
+
+  const cookievalue = tokencookie?.split("=")[1];
+  if (cookievalue) {
+    jwt.verify(cookievalue, JWT_SECRET, (err: any, user: any) => {
+      if (err) throw err;
+      const { userId, name } = user;
+      connection.userId = userId;
+      connection.name = name;
+      const broadcastClientInfo = () => {
+        const clientsInfo: { userId?: string; username?: string }[] = [];
+        wss.clients.forEach((client) => {
+          const customClient = client as CustomWebSocket;
+          clientsInfo.push({
+            userId: customClient.userId,
+            username: customClient.name,
+          });
+        });
+
+        wss.clients.forEach((client) => {
+          client.send(
+            JSON.stringify({
+              online: clientsInfo,
+            })
+          );
+        });
+      };
+      broadcastClientInfo();
+      connection.on("close", () => {
+        broadcastClientInfo();
+      });
+    });
+  }
 });

@@ -1,16 +1,18 @@
-import React, { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import React from "react";
 import { User } from "../Recoil";
 import { useRecoilValue } from "recoil";
-const RouteGuard: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
+import { Navigate } from "react-router-dom";
 
-  const navigate = useNavigate();
+const RouteGuard: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   const userIdCookie = useRecoilValue(User);
-  useEffect(() => {
-    if (!userIdCookie) {
-      navigate("/home");
-    }
-  }, [navigate]);
+
+  console.log(typeof userIdCookie);
+  console.log("On routeguard");
+
+  if (typeof userIdCookie === "undefined") {
+    console.log("hi");
+    return <Navigate to="/signup" />;
+  }
 
   return <>{children}</>;
 };

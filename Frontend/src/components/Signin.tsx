@@ -45,7 +45,7 @@ const Signin = () => {
         .split(";")
         .map((cookie) => cookie.trim());
       const userIdCookie = cookies.find((cookie) =>
-        cookie.startsWith("userId=")
+        cookie.startsWith("token=")
       );
       setUserCookie(userIdCookie);
         navigate("/");

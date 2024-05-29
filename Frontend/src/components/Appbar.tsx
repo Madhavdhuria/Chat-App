@@ -5,9 +5,9 @@ const Appbar = ({ name }: { name: string }) => {
   const navigate = useNavigate();
   const setUserCookie = useSetRecoilState(User);
   const handleLogout = () => {
-    document.cookie = "userId=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+    document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
     setUserCookie(null);
-    navigate("/home");
+    navigate("/signup");
   };
 
   return (
