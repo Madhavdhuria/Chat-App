@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:latest
+    container_name: postgres
+    environment:
+      POSTGRES_USER: madhavdhuria556
+      POSTGRES_PASSWORD: lstHU14OgWaI
+      POSTGRES_DB: test
+    networks:
+      - chat-app-network  # Connect to the custom network
+
+  backend:
+    image: madhav2024/chat-app-backend:latest
+    container_name: chat-app-backend
+    environment:
+      DATABASE_URL: 'postgresql://madhavdhuria556:lstHU14OgWaI@postgres:5432/test'
+    ports:
+      - "3000:3000"
+    depends_on:
+      - postgres
+    networks:
+      - chat-app-network  # Connect to the custom network
+
+  frontend:
+    image: madhav2024/chat-app-frontend:latest
+    container_name: chat-app-frontend
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+    networks:
+      - chat-app-network  # Connect to the custom network
+
+networks:
+  chat-app-network:  # Define the custom network
+    driver: bridge

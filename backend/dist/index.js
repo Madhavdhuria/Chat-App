@@ -21,6 +21,7 @@ const bcrypt_1 = __importDefault(require("bcrypt"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const ws_1 = __importDefault(require("ws"));
 dotenv_1.default.config();
+console.log("hlo");
 const app = (0, express_1.default)();
 const prisma = new client_1.PrismaClient();
 const JWT_SECRET = process.env.JWT_SECRET || "default_secret";
@@ -53,6 +54,35 @@ app.get("/", authenticateToken, (req, res) => __awaiter(void 0, void 0, void 0, 
     });
     return res.json({ userInfo });
 }));
+const getMessagesForUser = (selectedUser, userId) => __awaiter(void 0, void 0, void 0, function* () {
+    const res = yield prisma.p2p_Message.findMany({
+        where: {
+            OR: [
+                {
+                    recipientId: selectedUser,
+                    senderId: userId,
+                },
+                {
+                    recipientId: userId,
+                    senderId: selectedUser,
+                },
+            ],
+        },
+        orderBy: {
+            createdAt: "asc",
+        },
+    });
+    return res;
+});
+app.get("/getmessages/:selectedUser", authenticateToken, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    if (!req.user) {
+        return res.status(401).json({ message: "Unauthorized" });
+    }
+    const { userId } = req.user;
+    const selectedUser = req.params.selectedUser;
+    const messages = yield getMessagesForUser(Number(selectedUser), userId);
+    res.json({ messages });
+}));
 app.post("/signup", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { name, email, password } = req.body;
     let existingUser = yield prisma.user.findFirst({ where: { name } });
@@ -72,7 +102,6 @@ app.post("/signup", (req, res) => __awaiter(void 0, void 0, void 0, function* ()
     if (newUser) {
         const token = jsonwebtoken_1.default.sign({ userId: id, name: username }, JWT_SECRET);
         res.cookie("token", token, {
-            // httpOnly: true,
             secure: false,
             sameSite: "strict",
         });
@@ -89,7 +118,6 @@ app.post("/signin", (req, res) => __awaiter(void 0, void 0, void 0, function* ()
             if (matched) {
                 const token = jsonwebtoken_1.default.sign({ userId: existingUser.id, name: existingUser.name }, JWT_SECRET);
                 res.cookie("token", token, {
-                    // httpOnly: true,
                     secure: false,
                     sameSite: "strict",
                 });
@@ -151,25 +179,23 @@ wss.on("connection", (connection, req) => {
             };
             connection.on("message", (message) => __awaiter(void 0, void 0, void 0, function* () {
                 const { messagedata } = JSON.parse(message.toString());
-                const { recipient, text, senderName, senderId } = messagedata;
-                if (recipient && text) {
-                    const res = yield prisma.p2p_Message.create({
+                const { recipientId, text, senderId } = messagedata;
+                if (recipientId && text) {
+                    yield prisma.p2p_Message.create({
                         data: {
-                            recipientId: Number(recipient),
+                            recipientId: Number(recipientId),
                             senderId,
                             message: text,
                         },
                     });
-                    console.log(res);
                     const RecipientFound = [...wss.clients].filter((client) => {
                         const customClient = client;
-                        return String(customClient.userId) === String(recipient);
+                        return String(customClient.userId) === String(recipientId);
                     });
                     RecipientFound.forEach((c) => {
                         const customClient = c;
                         customClient.send(JSON.stringify({
-                            senderName: senderName,
-                            senderId: senderId,
+                            senderId,
                             data: text,
                         }));
                     });

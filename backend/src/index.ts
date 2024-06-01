@@ -3,11 +3,11 @@ import cors from "cors";
 import express, { NextFunction, Request, Response } from "express";
 import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
-import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import ws from "ws";
 
 dotenv.config();
+console.log("hlo");
 
 const app = express();
 const prisma = new PrismaClient();
@@ -35,7 +35,6 @@ declare module "express-serve-static-core" {
 
 const authenticateToken = (req: Request, res: Response, next: NextFunction) => {
   const token = req.cookies.token;
-
   if (!token) return res.sendStatus(401);
   jwt.verify(token, JWT_SECRET, (err: any, user: any) => {
     if (err) return res.sendStatus(403);
@@ -58,6 +57,37 @@ app.get("/", authenticateToken, async (req: Request, res: Response) => {
   return res.json({ userInfo });
 });
 
+const getMessagesForUser = async (selectedUser: number, userId: number) => {
+  const res = await prisma.p2p_Message.findMany({
+    where: {
+      OR: [
+        {
+          recipientId: selectedUser,
+          senderId: userId,
+        },
+        {
+          recipientId: userId,
+          senderId: selectedUser,
+        },
+      ],
+    },
+    orderBy: {
+      createdAt: "asc",
+    },
+  });
+  return res;
+};
+
+app.get("/getmessages/:selectedUser", authenticateToken, async (req, res) => {
+  if (!req.user) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+  const { userId } = req.user;
+  const selectedUser = req.params.selectedUser;
+  const messages = await getMessagesForUser(Number(selectedUser), userId);
+  res.json({ messages });
+});
+
 app.post("/signup", async (req: Request, res: Response) => {
   const { name, email, password } = req.body;
 
@@ -71,10 +101,9 @@ app.post("/signup", async (req: Request, res: Response) => {
     return res.status(400).json({ message: "Try Using Different email" });
   }
 
-  const hashedPassword = await bcrypt.hash(password, 10);
-
+  // Instead of hashing password with bcrypt, you can store it directly
   const newUser = await prisma.user.create({
-    data: { name, email, password: hashedPassword },
+    data: { name, email, password }, // Assuming 'password' here is a plain text
   });
 
   const { id } = newUser;
@@ -84,7 +113,6 @@ app.post("/signup", async (req: Request, res: Response) => {
     const token = jwt.sign({ userId: id, name: username }, JWT_SECRET);
 
     res.cookie("token", token, {
-      // httpOnly: true,
       secure: false,
       sameSite: "strict",
     });
@@ -99,14 +127,13 @@ app.post("/signin", async (req: Request, res: Response) => {
   try {
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
-      const matched = await bcrypt.compare(password, existingUser.password);
-      if (matched) {
+      // Instead of bcrypt, compare passwords directly
+      if (password === existingUser.password) {
         const token = jwt.sign(
           { userId: existingUser.id, name: existingUser.name },
           JWT_SECRET
         );
         res.cookie("token", token, {
-          // httpOnly: true,
           secure: false,
           sameSite: "strict",
         });
@@ -132,6 +159,7 @@ app.post("/signin", async (req: Request, res: Response) => {
     });
   }
 });
+
 interface CustomWebSocket extends ws.WebSocket {
   userId?: string;
   name?: string;
@@ -174,30 +202,30 @@ wss.on("connection", (connection: CustomWebSocket, req) => {
           );
         });
       };
+
       connection.on("message", async (message) => {
         const { messagedata } = JSON.parse(message.toString());
-        const { recipient, text, senderName, senderId } = messagedata;
+        const { recipientId, text, senderId } = messagedata;
 
-        if (recipient && text) {
-          const res = await prisma.p2p_Message.create({
+        if (recipientId && text) {
+          await prisma.p2p_Message.create({
             data: {
-              recipientId: Number(recipient),
+              recipientId: Number(recipientId),
               senderId,
               message: text,
             },
           });
-          console.log(res);
+
           const RecipientFound = [...wss.clients].filter((client) => {
             const customClient = client as CustomWebSocket;
-            return String(customClient.userId) === String(recipient);
+            return String(customClient.userId) === String(recipientId);
           });
 
           RecipientFound.forEach((c) => {
             const customClient = c as CustomWebSocket;
             customClient.send(
               JSON.stringify({
-                senderName: senderName,
-                senderId: senderId,
+                senderId,
                 data: text,
               })
             );

@@ -1,0 +1,16 @@
+FROM node:20
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm install
+
+COPY . .
+
+EXPOSE 3000
+
+# Build the application
+RUN npm run build
+
+# Start the application and run necessary commands
+CMD sh -c 'cd prisma && npx prisma migrate deploy && cd .. && node ./dist/index.js'
