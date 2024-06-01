@@ -14,7 +14,7 @@ services:
       - chat-app-network 
 
   backend:
-    image: madhavdhuria/chat-app-backend:latest
+    image: madhav2024/chat-app-backend:latest
     container_name: chat-app-backend
     environment:
       DATABASE_URL: 'postgresql://madhavdhuria556:lstHU14OgWaI@postgres:5432/test'
@@ -26,7 +26,7 @@ services:
       - chat-app-network
 
   frontend:
-    image: madhavdhuria/chat-app-frontend:latest
+    image: madhav2024/chat-app-frontend:latest
     container_name: chat-app-frontend
     ports:
       - "5173:5173"
