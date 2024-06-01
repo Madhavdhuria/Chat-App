@@ -8,11 +8,13 @@ services:
       POSTGRES_USER: madhavdhuria556
       POSTGRES_PASSWORD: lstHU14OgWaI
       POSTGRES_DB: test
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
     networks:
-      - chat-app-network  # Connect to the custom network
+      - chat-app-network 
 
   backend:
-    image: madhav2024/chat-app-backend:latest
+    image: madhavdhuria/chat-app-backend:latest
     container_name: chat-app-backend
     environment:
       DATABASE_URL: 'postgresql://madhavdhuria556:lstHU14OgWaI@postgres:5432/test'
@@ -21,18 +23,20 @@ services:
     depends_on:
       - postgres
     networks:
-      - chat-app-network  # Connect to the custom network
+      - chat-app-network
 
   frontend:
-    image: madhav2024/chat-app-frontend:latest
+    image: madhavdhuria/chat-app-frontend:latest
     container_name: chat-app-frontend
     ports:
       - "5173:5173"
     depends_on:
       - backend
     networks:
-      - chat-app-network  # Connect to the custom network
-
+      - chat-app-network 
 networks:
-  chat-app-network:  # Define the custom network
+  chat-app-network:  
     driver: bridge
+
+volumes:
+  postgres_data:
