@@ -7,7 +7,6 @@ import jwt from "jsonwebtoken";
 import ws from "ws";
 
 dotenv.config();
-console.log("hlo");
 
 const app = express();
 const prisma = new PrismaClient();

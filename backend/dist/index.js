@@ -17,7 +17,6 @@ const cors_1 = __importDefault(require("cors"));
 const express_1 = __importDefault(require("express"));
 const cookie_parser_1 = __importDefault(require("cookie-parser"));
 const dotenv_1 = __importDefault(require("dotenv"));
-const bcrypt_1 = __importDefault(require("bcrypt"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const ws_1 = __importDefault(require("ws"));
 dotenv_1.default.config();
@@ -93,9 +92,9 @@ app.post("/signup", (req, res) => __awaiter(void 0, void 0, void 0, function* ()
     if (existingUser) {
         return res.status(400).json({ message: "Try Using Different email" });
     }
-    const hashedPassword = yield bcrypt_1.default.hash(password, 10);
+    // Instead of hashing password with bcrypt, you can store it directly
     const newUser = yield prisma.user.create({
-        data: { name, email, password: hashedPassword },
+        data: { name, email, password }, // Assuming 'password' here is a plain text
     });
     const { id } = newUser;
     const username = newUser.name;
@@ -114,8 +113,8 @@ app.post("/signin", (req, res) => __awaiter(void 0, void 0, void 0, function* ()
     try {
         const existingUser = yield prisma.user.findUnique({ where: { email } });
         if (existingUser) {
-            const matched = yield bcrypt_1.default.compare(password, existingUser.password);
-            if (matched) {
+            // Instead of bcrypt, compare passwords directly
+            if (password === existingUser.password) {
                 const token = jsonwebtoken_1.default.sign({ userId: existingUser.id, name: existingUser.name }, JWT_SECRET);
                 res.cookie("token", token, {
                     secure: false,
